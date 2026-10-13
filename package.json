@@ -1,0 +1,21 @@
+{
+  "name": "medai_backend",
+  "version": "1.0.0",
+  "description": "Extracting information and enabling chat for uploaded medical documents.",
+  "license": "ISC",
+  "author": "Kartikey Verma",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "start": "node ./src/index.js",
+    "dev": "nodemon ./src/index.js"
+  },
+  "dependencies": {
+    "dotenv": "^18.0.7",
+    "express": "^5.3.0",
+    "mongoose": "^9.11.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
