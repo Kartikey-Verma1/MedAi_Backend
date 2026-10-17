@@ -4,18 +4,25 @@
   "description": "Extracting information and enabling chat for uploaded medical documents.",
   "license": "ISC",
   "author": "Kartikey Verma",
-  "type": "commonjs",
+  "type": "module",
   "main": "index.js",
   "scripts": {
-    "start": "node ./src/index.js",
-    "dev": "nodemon ./src/index.js"
+    "start": "node dist/node.js",
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
+    "http-errors": "^2.0.1",
     "mongoose": "^9.11.2"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14"
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
   }
 }
