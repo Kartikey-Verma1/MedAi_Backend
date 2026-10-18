@@ -58,3 +58,18 @@ export const otpVerification = (options: Iotpverparameter): {valid: boolean, mes
     }
 
 }
+
+
+export const otpcooldown = (otpSentAt: Date) : {isExpired: boolean, timeleft: number} => {
+    const elapsed = Date.now() - otpSentAt.getTime();
+    if(elapsed > 1000*30){
+        return {
+            isExpired: true,
+            timeleft: 0
+        }
+    }
+    return {
+        isExpired: false,
+        timeleft: Math.ceil((1000*30 - elapsed) / 1000)
+    }
+}

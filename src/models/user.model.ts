@@ -1,5 +1,6 @@
 import mongoose, { Model } from "mongoose";
 import bcrypt from 'bcrypt';
+import createHttpError from "http-errors";
 
 interface IUser {
     name: string,
@@ -7,6 +8,7 @@ interface IUser {
     password: string,
     otpHash?: string,
     otpExpiry?: Date,
+    otpSentAt?: Date,
     isVerified: boolean
 }
 
@@ -30,6 +32,7 @@ const userSchema = new mongoose.Schema<IUser, userModel, IUserMethods>({
         required: true,
         trim: true,
         lowercase: true,
+        unique: true,
         match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Please enter a valid email address."],
     },
     password: {
@@ -44,6 +47,10 @@ const userSchema = new mongoose.Schema<IUser, userModel, IUserMethods>({
     otpExpiry: {
         type: Date
     },
+    otpSentAt: {
+        type: Date,
+        default: null
+    },
     isVerified: {
         type: Boolean,
         required: true,
@@ -54,15 +61,23 @@ const userSchema = new mongoose.Schema<IUser, userModel, IUserMethods>({
 });
 
 userSchema.pre("save", async function (): Promise<void>{
-    if(this.isModified("password")){
-        this.password = await bcrypt.hash(this.password, 10);
+    try{
+        if(this.isModified("password")){
+            this.password = await bcrypt.hash(this.password, 10);
+        }
+    } catch (err) {
+        throw createHttpError(500, "Error in generating password hash");
     }
 });
 
 userSchema.methods.comparePassword = async function (password: string): Promise<boolean>{
-   return await bcrypt.compare(password, this.password);
+    try{
+        return await bcrypt.compare(password, this.password);
+    } catch (err) {
+        throw createHttpError(500, "Error in comparing password");
+    }
 }
 
-const User = mongoose.model<IUser, userModel>("user", userSchema);
+const User = mongoose.model<IUser, userModel>("User", userSchema);
 
 export default User;
