@@ -2,6 +2,7 @@ import express, { type Request, type Response, type NextFunction } from 'express
 import connectDB from "./config/database.js";
 import type { HttpError } from "http-errors";
 import authRouter from "./routes/authProfile.js";
+import userRouter from './routes/user.js';
 import cookieParser from "cookie-parser";
 
 import "dotenv/config";
@@ -15,6 +16,7 @@ const PORT: string | undefined = process.env.PORT;
 
 app.use("/", generalLimiter);
 app.use("/", authRouter);
+app.use("/", userRouter)
 
 
 

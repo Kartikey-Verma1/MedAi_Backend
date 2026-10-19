@@ -2,13 +2,15 @@ import mongoose, { Model } from "mongoose";
 import bcrypt from 'bcrypt';
 import createHttpError from "http-errors";
 
-interface IUser {
+export interface IUser {
     name: string,
     email: string,
     password: string,
     otpHash?: string,
     otpExpiry?: Date,
     otpSentAt?: Date,
+    resetTokenHash?: string | null,
+    resetTokenExpiry?: Date | null,
     isVerified: boolean
 }
 
@@ -45,11 +47,23 @@ const userSchema = new mongoose.Schema<IUser, userModel, IUserMethods>({
         select: false
     },
     otpExpiry: {
-        type: Date
+        type: Date,
+        select: false
     },
     otpSentAt: {
         type: Date,
-        default: null
+        default: null,
+        select: false
+    },
+    resetTokenHash: {
+        type: String,
+        default: null,
+        select: false
+    },
+    resetTokenExpiry: {
+        type: String,
+        default: null,
+        select: false
     },
     isVerified: {
         type: Boolean,
@@ -72,7 +86,8 @@ userSchema.pre("save", async function (): Promise<void>{
 
 userSchema.methods.comparePassword = async function (password: string): Promise<boolean>{
     try{
-        return await bcrypt.compare(password, this.password);
+        const isvalid = await bcrypt.compare(password, this.password);
+        return isvalid;
     } catch (err) {
         throw createHttpError(500, "Error in comparing password");
     }

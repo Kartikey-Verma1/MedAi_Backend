@@ -3,7 +3,7 @@ import { validateInputData } from '../utils/validation.js';
 import User from '../models/user.model.js';
 import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.js';
 import createHttpError from 'http-errors';
-import mongoose, { isValidObjectId } from 'mongoose';
+import { isValidObjectId } from 'mongoose';
 import Session from '../models/session.model.js';
 import { createHash } from 'node:crypto';
 import verifyAccessToken from '../middlewares/verifyAccessToken.js';
@@ -19,7 +19,7 @@ interface ISignInRequestBody{
 }
 
 interface IOtpverifyBody{
-    _id: string,
+    email: string,
     otp: string
 }
 
@@ -30,7 +30,7 @@ authRouter.post("/routes/authProfile/signup", otpLimiter, async(req, res) : Prom
         const body = req.body as ISignInRequestBody;
         const {name, email, password} = body;
         validateInputData(req);
-        const sameUser = await User.findOne({email});
+        const sameUser = await User.findOne({email}).select("+otpHash +otpExpiry +otpSentAt");
 
         if(sameUser){
             if(sameUser.isVerified) throw createHttpError(409, "User already exists!");
@@ -93,15 +93,16 @@ authRouter.post("/routes/authProfile/signup/otpverification", otpLimiter, async(
     try{
         //otp validation
         const body = req.body as IOtpverifyBody;
-        const {_id, otp} = body;
+        const {email, otp} = body;
 
-        if(!isValidObjectId(_id)){
-            throw createHttpError(400, "Invalid id!");
+        const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if(!email || typeof(email) != "string" || !emailRegex.test(email)){
+            throw createHttpError(422, "Enter valid email!");
         }
 
         const user = await User
-            .findById(_id)
-            .select(["otpHash", "otpExpiry"]);
+            .findOne({email})
+            .select(["otpHash", "otpExpiry", "otpSentAt"]);
 
         if(!user){
             throw createHttpError(400, "Signup first!");
@@ -126,7 +127,7 @@ authRouter.post("/routes/authProfile/signup/otpverification", otpLimiter, async(
             },
             {
                 $set: {isVerified: true},
-                $unset: {otpHash: 1, otpExpiry: 1}
+                $unset: {otpHash: 1, otpExpiry: 1, otpSentAt: 1}
             }
         );
 
@@ -260,7 +261,7 @@ authRouter.post("/routes/authProfile/logout", verifyAccessToken, async(req, res)
             userId: userId,
         },
         {
-            expiresAt: new Date(Date.now() + 1000*60*60*24),
+            expiresAt: new Date(Date.now()),
             revokedAt: new Date(Date.now())
         }
     );
