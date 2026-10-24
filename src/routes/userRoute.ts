@@ -1,15 +1,15 @@
 import express from 'express'
-import verifyAccessToken from '../middlewares/verifyAccessToken.js';
+import verifyAccessToken from '../middlewares/verifyAccessToken.middleware.js';
 import createHttpError from 'http-errors';
 import User from '../models/user.model.js';
-import verifyUser from '../middlewares/verifyUser.js';
+import verifyUser from '../middlewares/verifyUser.middleware.js';
 import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import Session from '../models/session.model.js';
 
 const userRouter = express.Router();
 
-userRouter.get("/routes/userRouter/my-info", 
+userRouter.get("/routes/userRoute/my-info", 
     verifyAccessToken, 
     verifyUser, 
     async (req, res) : Promise<void> => {
@@ -38,7 +38,7 @@ userRouter.get("/routes/userRouter/my-info",
     }
 });
 
-userRouter.patch("/routes/userRouter/edit-name", 
+userRouter.patch("/routes/userRoute/edit-name", 
     verifyAccessToken, 
     verifyUser,
     async (req, res) : Promise<void> => {
@@ -79,7 +79,7 @@ userRouter.patch("/routes/userRouter/edit-name",
     }
 });
 
-userRouter.post("/routes/userRouter/forget-password", async(req, res) : Promise<void> => {
+userRouter.post("/routes/userRoute/forget-password", async(req, res) : Promise<void> => {
     try{
         const { email } = req.body;
         const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,7 +129,7 @@ userRouter.post("/routes/userRouter/forget-password", async(req, res) : Promise<
     }
 });
 
-userRouter.post("/routes/userRouter/reset-verification", async(req, res) : Promise<void> => {
+userRouter.post("/routes/userRoute/reset-verification", async(req, res) : Promise<void> => {
     try{
         const {email, otp} = req.body;
         const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -183,7 +183,7 @@ userRouter.post("/routes/userRouter/reset-verification", async(req, res) : Promi
         .cookie("resetToken", resetToken, {
             httpOnly: true,
             sameSite: "lax",
-            path: "/routes/userRouter/reset-password",
+            path: "/routes/userRoute/reset-password",
             maxAge: 1000*60*5
         })
         .json({
@@ -204,7 +204,7 @@ userRouter.post("/routes/userRouter/reset-verification", async(req, res) : Promi
     }
 });
 
-userRouter.patch("/routes/userRouter/reset-password", async(req, res) : Promise<void> => {
+userRouter.patch("/routes/userRoute/reset-password", async(req, res) : Promise<void> => {
     try{
         const { resetToken } = req.cookies;
         const { email, password } = req.body;
@@ -272,7 +272,7 @@ userRouter.patch("/routes/userRouter/reset-password", async(req, res) : Promise<
         .clearCookie("resetToken", {
             httpOnly: true,
             sameSite: "lax",
-            path: "/routes/userRouter/reset-password",
+            path: "/routes/userRoute/reset-password",
             maxAge: 0
         })
         .json({
@@ -293,7 +293,7 @@ userRouter.patch("/routes/userRouter/reset-password", async(req, res) : Promise<
     }
 });
 
-userRouter.delete("/routes/userRouter/deleteprofile", 
+userRouter.delete("/routes/userRoute/deleteprofile", 
     verifyAccessToken, 
     verifyUser,
     async(req, res) : Promise<void> => {

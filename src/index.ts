@@ -1,12 +1,13 @@
 import express, { type Request, type Response, type NextFunction } from 'express';
 import connectDB from "./config/database.js";
 import type { HttpError } from "http-errors";
-import authRouter from "./routes/authProfile.js";
-import userRouter from './routes/user.js';
+import authRouter from "./routes/authRoute.js";
+import userRouter from './routes/userRoute.js';
 import cookieParser from "cookie-parser";
 
 import "dotenv/config";
-import { generalLimiter } from './middlewares/limiter.js';
+import { generalLimiter } from './middlewares/limiter.middleware.js';
+import documentRouter from './routes/documentRoute.js';
 
 const app = express();
 app.use(express.json());
@@ -16,7 +17,8 @@ const PORT: string | undefined = process.env.PORT;
 
 app.use("/", generalLimiter);
 app.use("/", authRouter);
-app.use("/", userRouter)
+app.use("/", userRouter);
+app.use("/", documentRouter);
 
 
 

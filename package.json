@@ -20,7 +20,9 @@
     "http-errors": "^2.0.1",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.11.2",
-    "multer": "^2.4.0"
+    "multer": "^2.4.0",
+    "pdf-parse": "^2.4.5",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

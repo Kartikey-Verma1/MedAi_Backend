@@ -2,7 +2,6 @@ import type { Model, Types } from "mongoose";
 import mongoose, { Schema } from "mongoose";
 import User from "./user.model.js";
 import jwt from "jsonwebtoken";
-import "dotenv/config";
 import createHttpError from "http-errors";
 
 export interface ISession{

@@ -6,9 +6,9 @@ import createHttpError from 'http-errors';
 import { isValidObjectId } from 'mongoose';
 import Session from '../models/session.model.js';
 import { createHash } from 'node:crypto';
-import verifyAccessToken from '../middlewares/verifyAccessToken.js';
-import verifyRefreshToken from '../middlewares/verifyRefreshToken.js';
-import { authLimiter, otpLimiter } from '../middlewares/limiter.js';
+import verifyAccessToken from '../middlewares/verifyAccessToken.middleware.js';
+import verifyRefreshToken from '../middlewares/verifyRefreshToken.middleware.js';
+import { authLimiter, otpLimiter } from '../middlewares/limiter.middleware.js';
 
 const authRouter = express.Router();
 
@@ -25,7 +25,7 @@ interface IOtpverifyBody{
 
 authRouter.use(authLimiter);
 
-authRouter.post("/routes/authProfile/signup", otpLimiter, async(req, res) : Promise<void> => {
+authRouter.post("/routes/authRoute/signup", otpLimiter, async(req, res) : Promise<void> => {
     try{
         const body = req.body as ISignInRequestBody;
         const {name, email, password} = body;
@@ -89,7 +89,7 @@ authRouter.post("/routes/authProfile/signup", otpLimiter, async(req, res) : Prom
     }
 });
 
-authRouter.post("/routes/authProfile/signup/otpverification", otpLimiter, async(req, res) : Promise<void> =>{
+authRouter.post("/routes/authRoute/signup/otpverification", otpLimiter, async(req, res) : Promise<void> =>{
     try{
         //otp validation
         const body = req.body as IOtpverifyBody;
@@ -151,7 +151,7 @@ authRouter.post("/routes/authProfile/signup/otpverification", otpLimiter, async(
         .cookie("refreshToken", refreshToken, {
             httpOnly: true,
             sameSite: 'lax',
-            path: "/routes/authProfile/refresh",
+            path: "/routes/authRoute/refresh",
             maxAge: 1000*60*60*24*7
         })
         .cookie("accessToken", accessToken, {
@@ -177,8 +177,10 @@ authRouter.post("/routes/authProfile/signup/otpverification", otpLimiter, async(
     }
 });
 
-authRouter.post("/routes/authProfile/login", async(req, res) : Promise<void> => {
+authRouter.post("/routes/authRoute/refresh/login", verifyRefreshToken, async(req, res) : Promise<void> => {
     try{
+        let session = req.session;
+        const flag = session;
         const {email, password} = req.body;
         
         if(typeof(email) != "string"){
@@ -200,17 +202,19 @@ authRouter.post("/routes/authProfile/login", async(req, res) : Promise<void> => 
             throw createHttpError(422, "Invalid email or password");
         }
         
-        const isValid = await user.comparePassword(password);
-        
-        if(!isValid){
-            throw createHttpError(422, "Invalid email or password");
+        if(!session || !flag){
+            const isValid = await user.comparePassword(password);
+            
+            if(!isValid){
+                throw createHttpError(422, "Invalid email or password");
+            }
+    
+            session = new Session({
+                userId: user._id,
+                refreshTokenHash: "pending",
+                expiresAt: new Date(Date.now() + 1000*60*60*24*7)
+            });
         }
-
-        const session = new Session({
-            userId: user._id,
-            refreshTokenHash: "pending",
-            expiresAt: new Date(Date.now() + 1000*60*60*24*7)
-        })
 
         const accessToken = session.generateAccessToken();
         const refreshToken = session.generateRefreshToken();
@@ -218,14 +222,33 @@ authRouter.post("/routes/authProfile/login", async(req, res) : Promise<void> => 
             .update(refreshToken)
             .digest("hex");
 
-        session.refreshTokenHash = refreshTokenHash;
-        await session.save();
+        if(!flag){
+            session.refreshTokenHash = refreshTokenHash;
+            await session.save();
+        }else {
+
+            const updatedSession = await Session.findOneAndUpdate(
+                {
+                    _id: session._id,
+                    userId: session.userId,
+                    refreshTokenHash: session.refreshTokenHash,
+                    revokedAt: null,
+                    expiresAt: { $gt: new Date() }
+                },
+                {
+                    refreshTokenHash: refreshTokenHash
+                },
+                { returnDocument: "after" }
+            )
+
+            if(!updatedSession) throw createHttpError(500, "Error in setting token");
+        }
 
         res
         .cookie("refreshToken", refreshToken, {
             httpOnly: true,
             sameSite: 'lax',
-            path: "/routes/authProfile/refresh",
+            path: "/routes/authRoute/refresh",
             maxAge: 1000*60*60*24*7
         })
         .cookie("accessToken", accessToken, {
@@ -252,25 +275,30 @@ authRouter.post("/routes/authProfile/login", async(req, res) : Promise<void> => 
     }
 });
 
-authRouter.post("/routes/authProfile/logout", verifyAccessToken, async(req, res) : Promise<void> => {
+authRouter.post("/routes/authRoute/logout", verifyAccessToken, async(req, res) : Promise<void> => {
     const userId = req.session?.userId;
     if(!userId || !isValidObjectId(userId)) throw createHttpError(400, "Invalid Id!");
-    await Session.findOneAndUpdate(
+    const updatedSession = await Session.findOneAndUpdate(
         { 
             _id: req.session?._id,
             userId: userId,
         },
         {
-            expiresAt: new Date(Date.now()),
-            revokedAt: new Date(Date.now())
-        }
+            $set: {
+                expiresAt: new Date(Date.now()),
+                revokedAt: new Date(Date.now())
+            }
+        },
+        { returnDocument: "after" }
     );
+
+    if(!updatedSession) throw createHttpError(500, "Error in setting token");
 
     res
     .clearCookie("refreshToken",{
         httpOnly: true,
         sameSite: 'lax',
-        path: "/routes/authProfile/refresh",
+        path: "/routes/authRoute/refresh",
         maxAge: 0
     })
     .clearCookie("accessToken",{
@@ -283,10 +311,13 @@ authRouter.post("/routes/authProfile/logout", verifyAccessToken, async(req, res)
     });
 });
 
-authRouter.post("/routes/authProfile/refresh",verifyRefreshToken, async(req, res) : Promise<void> => {
+authRouter.post("/routes/authRoute/refresh/token",verifyRefreshToken, async(req, res) : Promise<void> => {
     try{
         const session = req.session;
         
+        if(!session){
+            throw createHttpError(401, "Session Expired");
+        }
         if(!session?.userId || !isValidObjectId(session.userId)){
             throw createHttpError(400, "Invalid Token");
         }
@@ -301,15 +332,30 @@ authRouter.post("/routes/authProfile/refresh",verifyRefreshToken, async(req, res
         const refreshTokenHash = createHash('sha256')
             .update(refreshToken)
             .digest("hex");
-        session.refreshTokenHash = refreshTokenHash;
-        
-        await session.save();
+
+        const updatedSession = await Session.findOneAndUpdate(
+            {
+                _id: session._id,
+                userId: session.userId,
+                refreshTokenHash: session.refreshTokenHash,
+                revokedAt: null,
+                expiresAt: {$gt: new Date()}
+            },
+            {
+                $set:{
+                    refreshTokenHash: refreshTokenHash
+                }
+            },
+            { returnDocument: "after" }
+        );
+
+        if(!updatedSession) throw createHttpError(500, "Error in setting token")
         
         res
         .cookie("refreshToken", refreshToken, {
             httpOnly: true,
             sameSite: 'lax',
-            path: "/routes/authProfile/refresh",
+            path: "/routes/authRoute/refresh",
             maxAge: 1000*60*60*24*7
         })
         .cookie("accessToken", accessToken, {
@@ -333,6 +379,6 @@ authRouter.post("/routes/authProfile/refresh",verifyRefreshToken, async(req, res
             });
         }
     }
-})
+});
 
 export default authRouter;

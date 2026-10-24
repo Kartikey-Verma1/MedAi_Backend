@@ -1,5 +1,4 @@
 import { createHmac, randomInt, timingSafeEqual } from "node:crypto"
-import 'dotenv/config';
 import createHttpError from "http-errors";
 
 interface Iotpgenreturn{
