@@ -3,7 +3,7 @@ import verifyAccessToken from '../middlewares/verifyAccessToken.middleware.js';
 import createHttpError from 'http-errors';
 import User from '../models/user.model.js';
 import verifyUser from '../middlewares/verifyUser.middleware.js';
-import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.js';
+import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.util.js';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import Session from '../models/session.model.js';
 

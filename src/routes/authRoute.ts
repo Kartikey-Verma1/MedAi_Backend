@@ -1,7 +1,7 @@
 import express from 'express';
-import { validateInputData } from '../utils/validation.js';
+import { validateInputData } from '../utils/validation.util.js';
 import User from '../models/user.model.js';
-import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.js';
+import { otpcooldown, otpGeneration, otpVerification } from '../utils/otp.util.js';
 import createHttpError from 'http-errors';
 import { isValidObjectId } from 'mongoose';
 import Session from '../models/session.model.js';
