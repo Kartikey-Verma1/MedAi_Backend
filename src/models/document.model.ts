@@ -9,10 +9,9 @@ export type DocumentStatus =
     "Completed" |
     "Failed";
 
-export type ExtractionMethod = 
+type ExtractionMethod = 
     "pdf-text" |
     "ocr" |
-    "hybrid" |
     "image-ocr";
 interface IStructuredData{
     category: string,
@@ -28,6 +27,12 @@ interface IAttentionData{
     sourcePage?: number[]
 }
 
+export interface IExtractedText{
+    pageNumber: number,
+    text: string,
+    method: ExtractionMethod
+}
+
 interface IDocument{
     userId: Types.ObjectId,
     originalName: string,
@@ -35,8 +40,7 @@ interface IDocument{
     mimeType: string,
     fileSize: number,
     status: DocumentStatus,
-    extractedText?: string,
-    extractionMethod?: ExtractionMethod,
+    extractedText?: IExtractedText[],
     pageCount?: number,
     analysis?: {
         summary?: string,
@@ -82,6 +86,22 @@ const StructuredSchema = new Schema<IStructuredData> ({
     }
 }, {_id: false});
 
+const ExtractedTextSchema = new Schema<IExtractedText>({
+    pageNumber: {
+        type: Number,
+        required: true
+    },
+    text: {
+        type: String,
+        required: true
+    },
+    method: {
+        type: String,
+        enum: ["pdf-text", "ocr", "image-ocr"],
+        required: true
+    }
+}, {_id: false});
+
 const DocumentSchema = new Schema<IDocument> ({
     userId: {
         type: Schema.ObjectId,
@@ -122,19 +142,7 @@ const DocumentSchema = new Schema<IDocument> ({
         ],
         required: true
     },
-    extractedText: {
-        type: String
-    },
-    extractionMethod: {
-        type: String,
-        enum: [
-            "pdf-text",
-            "ocr",
-            "hybrid",
-            "image-ocr"
-        ],
-        default: "Uploaded"
-    },
+    extractedText: [ExtractedTextSchema],
     pageCount: {
         type: Number,
     },

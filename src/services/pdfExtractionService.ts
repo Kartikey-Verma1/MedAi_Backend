@@ -1,23 +1,19 @@
 import createHttpError from "http-errors";
 import { readFile } from "node:fs/promises";
 import { PDFParse } from "pdf-parse";
+import textQuality from "../utils/textQuality.util.js";
+import type { IExtractedText } from "../models/document.model.js";
+import ocr from "./ocrService.js";
 import { createWorker } from "tesseract.js";
-
-interface IPageExtraction {
-    pageNumber: number,
-    text: string,
-    method: "pdf-text" | "ocr" | "hybrid"
-}
 
 const MIN_TEXT_LENGTH = 30;
 
-const extractPdfPageByPage = async (filePath: string) : Promise<IPageExtraction[]> => {
+const extractPdfPageByPage = async (filePath: string) : Promise<IExtractedText[]> => {
     
     const buffer = await readFile(filePath);
     const parser = new PDFParse({data: buffer});
-    const worker = await createWorker("eng");
-
-    const pages: IPageExtraction[] = [];
+    const worker = await createWorker('eng');
+    const pages: IExtractedText[] = [];
     try{
 
         const info = await parser.getInfo();
@@ -31,7 +27,7 @@ const extractPdfPageByPage = async (filePath: string) : Promise<IPageExtraction[
 
             const digitalText = result.pages[0]?.text.trim();
 
-            if(digitalText && digitalText.length > MIN_TEXT_LENGTH){
+            if(digitalText && digitalText.length > MIN_TEXT_LENGTH && textQuality(digitalText)){
                 pages.push({
                     pageNumber,
                     text: digitalText,
@@ -50,22 +46,20 @@ const extractPdfPageByPage = async (filePath: string) : Promise<IPageExtraction[
                     throw createHttpError(400, "Failed to render page");
                 }
 
-                const ocrResult = await worker.recognize(Buffer.from(imageBuffer));
-
-                const ocrText = ocrResult.data.text.trim();
+                const ocrText = await ocr(worker, Buffer.from(imageBuffer));
 
                 pages.push({
                     pageNumber,
                     text: ocrText,
-                    method: "ocr",
+                    method: 'ocr',
                 });
             }
         }
 
         return pages;
     } finally {
-        await worker.terminate();
         await parser.destroy();
+        await worker.terminate();
     }
 }
 

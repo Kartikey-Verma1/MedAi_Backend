@@ -2,8 +2,9 @@ import express from "express";
 import verifyAccessToken from "../middlewares/verifyAccessToken.middleware.js";
 import upload from "../middlewares/upload.middleware.js";
 import createHttpError from "http-errors";
-import extractPdfPageByPage from "../services/extractionService.js";
+import extractPdfPageByPage from "../services/pdfExtractionService.js";
 import fs from "fs/promises";
+import imageExtraction from "../services/imageExtractionService.js";
 
 const documentRouter = express.Router();
 
@@ -17,7 +18,13 @@ documentRouter.post("/routes/documentRoute/upload",
             throw createHttpError(404, "File not found");
         }
         
-        const data = await extractPdfPageByPage(file.path);
+        const data = file.mimetype === 'application/pdf' ? 
+            await extractPdfPageByPage(file.path) : 
+            await imageExtraction(file.path);
+
+        if(!data || data.length <= 0){
+            createHttpError(500, "Error in extraction");
+        }
 
         res.send(data);
         
