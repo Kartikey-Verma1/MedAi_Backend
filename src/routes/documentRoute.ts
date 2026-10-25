@@ -7,10 +7,12 @@ import fs from "fs/promises";
 import imageExtraction from "../services/imageExtractionService.js";
 import medicalAnalyzer from "../services/medicalAnalysisService.js";
 import Document from "../models/document.model.js";
+import { isValidObjectId } from "mongoose";
+import { statusLimiter } from "../middlewares/limiter.middleware.js";
 
 const documentRouter = express.Router();
 
-documentRouter.post("/routes/documentRoute/upload",
+documentRouter.post("/upload",
     verifyAccessToken,
     upload.single("file"),
     async (req, res) => {
@@ -84,5 +86,34 @@ documentRouter.post("/routes/documentRoute/upload",
         }
     }
 });
+
+documentRouter.get("/:documentId/status", 
+    statusLimiter, 
+    verifyAccessToken, 
+    async(req, res)=>{
+    try{
+        const id = req.params.documentId;
+        if(!id || !isValidObjectId(id)){
+            throw createHttpError(400, "Invalid id");
+        }
+        const status = await Document.findById(req.params.documentId).select("status");
+
+        res.json({
+            status
+        });
+    } catch (err: unknown) {
+        if(createHttpError.isHttpError(err) &&  'statusCode' in err){
+            const error = err;
+            res.status(error.statusCode).json({
+                message: error.message,
+                data: error.data
+            });
+        } else {
+            res.status(500).json({
+                message: "Internal Server Error"
+            });
+        }
+    }
+})
 
 export default documentRouter;

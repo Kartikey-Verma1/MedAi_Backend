@@ -25,7 +25,7 @@ interface IOtpverifyBody{
 
 authRouter.use(authLimiter);
 
-authRouter.post("/routes/authRoute/signup", otpLimiter, async(req, res) : Promise<void> => {
+authRouter.post("/signup", otpLimiter, async(req, res) : Promise<void> => {
     try{
         const body = req.body as ISignInRequestBody;
         const {name, email, password} = body;
@@ -89,7 +89,7 @@ authRouter.post("/routes/authRoute/signup", otpLimiter, async(req, res) : Promis
     }
 });
 
-authRouter.post("/routes/authRoute/signup/otpverification", otpLimiter, async(req, res) : Promise<void> =>{
+authRouter.post("/signup/otpverification", otpLimiter, async(req, res) : Promise<void> =>{
     try{
         //otp validation
         const body = req.body as IOtpverifyBody;
@@ -177,7 +177,7 @@ authRouter.post("/routes/authRoute/signup/otpverification", otpLimiter, async(re
     }
 });
 
-authRouter.post("/routes/authRoute/refresh/login", verifyRefreshToken, async(req, res) : Promise<void> => {
+authRouter.post("/refresh/login", verifyRefreshToken, async(req, res) : Promise<void> => {
     try{
         let session = req.session;
         const flag = session;
@@ -275,7 +275,7 @@ authRouter.post("/routes/authRoute/refresh/login", verifyRefreshToken, async(req
     }
 });
 
-authRouter.post("/routes/authRoute/logout", verifyAccessToken, async(req, res) : Promise<void> => {
+authRouter.post("/logout", verifyAccessToken, async(req, res) : Promise<void> => {
     const userId = req.session?.userId;
     if(!userId || !isValidObjectId(userId)) throw createHttpError(400, "Invalid Id!");
     const updatedSession = await Session.findOneAndUpdate(
@@ -311,7 +311,7 @@ authRouter.post("/routes/authRoute/logout", verifyAccessToken, async(req, res) :
     });
 });
 
-authRouter.post("/routes/authRoute/refresh/token",verifyRefreshToken, async(req, res) : Promise<void> => {
+authRouter.post("/refresh/token",verifyRefreshToken, async(req, res) : Promise<void> => {
     try{
         const session = req.session;
         

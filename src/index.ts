@@ -16,9 +16,9 @@ app.use(cookieParser());
 const PORT: string | undefined = process.env.PORT;
 
 app.use("/", generalLimiter);
-app.use("/", authRouter);
-app.use("/", userRouter);
-app.use("/", documentRouter);
+app.use("/routes/authRoute", authRouter);
+app.use("/routes/userRoute", userRouter);
+app.use("/routes/documentRoute", documentRouter);
 
 
 

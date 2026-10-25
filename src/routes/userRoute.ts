@@ -9,7 +9,7 @@ import Session from '../models/session.model.js';
 
 const userRouter = express.Router();
 
-userRouter.get("/routes/userRoute/my-info", 
+userRouter.get("/my-info", 
     verifyAccessToken, 
     verifyUser, 
     async (req, res) : Promise<void> => {
@@ -38,7 +38,7 @@ userRouter.get("/routes/userRoute/my-info",
     }
 });
 
-userRouter.patch("/routes/userRoute/edit-name", 
+userRouter.patch("/edit-name", 
     verifyAccessToken, 
     verifyUser,
     async (req, res) : Promise<void> => {
@@ -79,7 +79,7 @@ userRouter.patch("/routes/userRoute/edit-name",
     }
 });
 
-userRouter.post("/routes/userRoute/forget-password", async(req, res) : Promise<void> => {
+userRouter.post("/forget-password", async(req, res) : Promise<void> => {
     try{
         const { email } = req.body;
         const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,7 +129,7 @@ userRouter.post("/routes/userRoute/forget-password", async(req, res) : Promise<v
     }
 });
 
-userRouter.post("/routes/userRoute/reset-verification", async(req, res) : Promise<void> => {
+userRouter.post("/reset-verification", async(req, res) : Promise<void> => {
     try{
         const {email, otp} = req.body;
         const emailRegex: RegExp = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -204,7 +204,7 @@ userRouter.post("/routes/userRoute/reset-verification", async(req, res) : Promis
     }
 });
 
-userRouter.patch("/routes/userRoute/reset-password", async(req, res) : Promise<void> => {
+userRouter.patch("/reset-password", async(req, res) : Promise<void> => {
     try{
         const { resetToken } = req.cookies;
         const { email, password } = req.body;
@@ -293,7 +293,7 @@ userRouter.patch("/routes/userRoute/reset-password", async(req, res) : Promise<v
     }
 });
 
-userRouter.delete("/routes/userRoute/deleteprofile", 
+userRouter.delete("/deleteprofile", 
     verifyAccessToken, 
     verifyUser,
     async(req, res) : Promise<void> => {

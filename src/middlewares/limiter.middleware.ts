@@ -5,6 +5,9 @@ export const generalLimiter = rateLimit({
     limit: 60,
     standardHeaders: "draft-8",
     legacyHeaders: false,
+
+    skip: (req)=> req.path.endsWith("/status"),
+    
     message: {
         message: "Too many attempts, please try again later."
     }
@@ -29,3 +32,13 @@ export const otpLimiter = rateLimit({
         message: "Too many attempts, please try again later."
     }
 })
+
+export const statusLimiter = rateLimit({
+    windowMs: 1000,
+    limit: 2,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: {
+        message: "Too many attempts, please try again later."
+    }
+});
