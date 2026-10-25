@@ -36,7 +36,7 @@ const extractPdfPageByPage = async (filePath: string) : Promise<IExtractedText[]
             } else {
                 const screenshot = await parser.getScreenshot({
                     partial: [pageNumber],
-                    desiredWidth: 1400,
+                    desiredWidth: 2400,
                     imageBuffer: true,
                     imageDataUrl: false
                 });

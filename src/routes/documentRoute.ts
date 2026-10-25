@@ -5,6 +5,8 @@ import createHttpError from "http-errors";
 import extractPdfPageByPage from "../services/pdfExtractionService.js";
 import fs from "fs/promises";
 import imageExtraction from "../services/imageExtractionService.js";
+import medicalAnalyzer from "../services/medicalAnalysisService.js";
+import Document from "../models/document.model.js";
 
 const documentRouter = express.Router();
 
@@ -18,15 +20,47 @@ documentRouter.post("/routes/documentRoute/upload",
             throw createHttpError(404, "File not found");
         }
         
+        const document = new Document({
+            userId: req.session?.userId,
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            fileSize: file.size,
+            status: "Uploaded",
+            originalFileDeleted: false,
+            processedAt: new Date()
+        });
+
+        await document.save();
+
+        document.status = "Extracting";
+        await document.save();
+
         const data = file.mimetype === 'application/pdf' ? 
             await extractPdfPageByPage(file.path) : 
             await imageExtraction(file.path);
 
         if(!data || data.length <= 0){
-            createHttpError(500, "Error in extraction");
+            throw createHttpError(500, "Error in extraction");
         }
 
-        res.send(data);
+        document.extractedText = data;
+        document.pageCount = data.length;
+        document.status = "Extracted";
+        await document.save();
+
+        document.status = "Analyzing";
+        document.save();
+
+        const analysis = await medicalAnalyzer(data);
+
+        document.status = "Creating Embeddings";
+        document.analysis = analysis;
+        await document.save();
+        res.json({
+            documentId: document._id,
+            status: document.status,
+            analysis: document.analysis
+        });
         
     } catch (err: unknown) {
         if(createHttpError.isHttpError(err) &&  'statusCode' in err){
@@ -43,7 +77,7 @@ documentRouter.post("/routes/documentRoute/upload",
     } finally {
         if(file?.path){
             try{
-                fs.unlink(file.path);
+                await fs.unlink(file.path);
             } catch(err) {
                 console.error(`Failed to delete temp file ${file.path}: ${err}`);
             }

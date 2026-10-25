@@ -1,11 +1,14 @@
 import type { Types } from "mongoose";
 import { model, Schema } from "mongoose";
 import User from "./user.model.js";
+import { string } from "zod";
 
 export type DocumentStatus = 
     "Uploaded" |
+    "Extracting" |
     "Extracted" |
     "Analyzing" |
+    "Creating Embeddings" |
     "Completed" |
     "Failed";
 
@@ -13,18 +16,13 @@ type ExtractionMethod =
     "pdf-text" |
     "ocr" |
     "image-ocr";
-interface IStructuredData{
-    category: string,
-    title: string,
-    value: string,
-    sourcePage?: number
-}
 
-interface IAttentionData{
+
+export interface IAttentionData{
     title: string,
     explanation: string,
     severity: "Low" | "Medium" | "High" | "Unknown"
-    sourcePage?: number[]
+    sourcePage?: number[] | undefined
 }
 
 export interface IExtractedText{
@@ -33,20 +31,20 @@ export interface IExtractedText{
     method: ExtractionMethod
 }
 
+export interface IAnalysis{
+    summary: string,
+    attentionData: IAttentionData[]
+}
+
 interface IDocument{
     userId: Types.ObjectId,
     originalName: string,
-    storedFileName?: string,
     mimeType: string,
     fileSize: number,
     status: DocumentStatus,
     extractedText?: IExtractedText[],
     pageCount?: number,
-    analysis?: {
-        summary?: string,
-        structuredData?: IStructuredData[],
-        attentionData?: IAttentionData[]
-    },
+    analysis?: IAnalysis,
     originalFileDeleted: boolean,
     processedAt?: Date
 }
@@ -68,22 +66,9 @@ const AttentionSchema = new Schema<IAttentionData>({
     sourcePage: [Number]
 }, {_id: false});
 
-const StructuredSchema = new Schema<IStructuredData> ({
-    category: {
-        type: String,
-        required: true
-    }, 
-    title: {
-        type: String,
-        required: true,
-    }, 
-    value: {
-        type: String,
-        required: true
-    }, 
-    sourcePage: {
-        type: Number
-    }
+const AnalysisSchema = new Schema<IAnalysis>({
+    summary: string,
+    attentionData: [AttentionSchema]
 }, {_id: false});
 
 const ExtractedTextSchema = new Schema<IExtractedText>({
@@ -112,9 +97,6 @@ const DocumentSchema = new Schema<IDocument> ({
     originalName: {
         type: String,
         required: true
-    },
-    storedFileName: {
-        type: String
     }, 
     mimeType: {
         type: String,
@@ -135,8 +117,11 @@ const DocumentSchema = new Schema<IDocument> ({
         type: String,
         enum: [
             "Uploaded" ,
+            "Extracting",
             "Extracted",
             "Analyzing",
+            "Analyzed",
+            "Creating Embeddings",
             "Completed",
             "Failed"
         ],
@@ -146,11 +131,7 @@ const DocumentSchema = new Schema<IDocument> ({
     pageCount: {
         type: Number,
     },
-    analysis: {
-        summary: String,
-        structuredData: [StructuredSchema],
-        attentionData: [AttentionSchema]
-    },
+    analysis: AnalysisSchema,
     originalFileDeleted: {
         type: Boolean,
         default: false,
@@ -158,6 +139,11 @@ const DocumentSchema = new Schema<IDocument> ({
     },
     processedAt: Date
 }, { timestamps: true });
+
+DocumentSchema.index(
+    {createdAt: 1},
+    {expireAfterSeconds: 1*60*60*24*7}
+);
 
 const Document = model<IDocument>("Document", DocumentSchema);
 export default Document;
