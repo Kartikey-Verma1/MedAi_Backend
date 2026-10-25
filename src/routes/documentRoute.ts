@@ -9,6 +9,7 @@ import medicalAnalyzer from "../services/medicalAnalysisService.js";
 import Document from "../models/document.model.js";
 import { isValidObjectId } from "mongoose";
 import { statusLimiter } from "../middlewares/limiter.middleware.js";
+import chunkText from "../utils/chunkText.util.js";
 
 const documentRouter = express.Router();
 
@@ -34,36 +35,66 @@ documentRouter.post("/upload",
 
         await document.save();
 
-        document.status = "Extracting";
-        await document.save();
-
-        const data = file.mimetype === 'application/pdf' ? 
-            await extractPdfPageByPage(file.path) : 
-            await imageExtraction(file.path);
-
-        if(!data || data.length <= 0){
-            throw createHttpError(500, "Error in extraction");
-        }
-
-        document.extractedText = data;
-        document.pageCount = data.length;
-        document.status = "Extracted";
-        await document.save();
-
-        document.status = "Analyzing";
-        document.save();
-
-        const analysis = await medicalAnalyzer(data);
-
-        document.status = "Creating Embeddings";
-        document.analysis = analysis;
-        await document.save();
         res.json({
-            documentId: document._id,
-            status: document.status,
-            analysis: document.analysis
+            documentId: document._id
         });
-        
+        try{
+            await Document.findOneAndUpdate(
+                {_id: document._id},
+                {
+                    $set:{
+                        status: "Extracting"
+                    }
+                }
+            )
+    
+            const extractedText = file.mimetype === 'application/pdf' ? 
+                await extractPdfPageByPage(file.path) : 
+                await imageExtraction(file.path);
+    
+            if(!extractedText || extractedText.length <= 0){
+                throw createHttpError(500, "Error in extraction");
+            }
+    
+            await Document.findOneAndUpdate(
+                {_id: document._id},
+                {
+                    $set:{
+                        extractedText: extractedText,
+                        pageCount: extractedText.length,
+                        status: "Extracted"
+                    }
+                }
+            )
+    
+            await Document.findOneAndUpdate(
+                {_id: document._id},
+                {
+                    $set:{
+                        status: "Analyzing"
+                    }
+                }
+            )
+    
+            // const analysis = await medicalAnalyzer(extractedText);
+    
+            await Document.findOneAndUpdate(
+                {_id: document._id},
+                {
+                    $set:{
+                        // analysis: analysis
+                        status: "Creating Embeddings"
+                    }
+                }
+            )
+    
+            const chunks = chunkText(extractedText);
+    
+            console.log(chunks);
+
+        } catch (err){
+            console.error(err);
+        }
     } catch (err: unknown) {
         if(createHttpError.isHttpError(err) &&  'statusCode' in err){
             const error = err;
@@ -96,11 +127,22 @@ documentRouter.get("/:documentId/status",
         if(!id || !isValidObjectId(id)){
             throw createHttpError(400, "Invalid id");
         }
-        const status = await Document.findById(req.params.documentId).select("status");
+        const data = await Document.findById(req.params.documentId);
+
+        if(!data){
+            throw createHttpError(400, "Invalid id");
+        }
+
+        if(data.status === "Creating Embeddings" || data.status === "Completed"){
+            return res.json({
+                status: data.status,
+                analysis: data.analysis
+            });
+        }
 
         res.json({
-            status
-        });
+            status: data.status
+        })
     } catch (err: unknown) {
         if(createHttpError.isHttpError(err) &&  'statusCode' in err){
             const error = err;
