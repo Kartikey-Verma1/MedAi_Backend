@@ -1,7 +1,7 @@
 import {encode, decode} from "gpt-tokenizer";
 import type { IExtractedText } from "../models/document.model.js";
 
-interface ITextChunk{
+export interface ITextChunk{
     text: string,
     pageNumber: number,
     chunkIndex: number

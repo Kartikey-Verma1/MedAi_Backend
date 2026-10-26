@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import "dotenv/config";
 import { generalLimiter } from './middlewares/limiter.middleware.js';
 import documentRouter from './routes/documentRoute.js';
+import setupQdrantCollection from './services/qdrantSetupService.js';
 
 const app = express();
 app.use(express.json());
@@ -30,6 +31,10 @@ app.use("/", (err: HttpError, req: Request, res: Response, next: NextFunction)=>
 });
 
 connectDB()
+.then(async ()=>{
+    await setupQdrantCollection();
+    console.log("Qdrant collection setup successful");
+})
 .then(()=>{
     app.listen(PORT, ()=>{
         console.log("Server is running of port:", PORT);
@@ -37,4 +42,4 @@ connectDB()
 })
 .catch((err: unknown)=>{
     console.error("Error in starting server:", err);
-})
+});

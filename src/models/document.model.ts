@@ -36,7 +36,7 @@ export interface IAnalysis{
     attentionData: IAttentionData[]
 }
 
-interface IDocument{
+export interface IDocument{
     userId: Types.ObjectId,
     originalName: string,
     mimeType: string,
@@ -46,7 +46,8 @@ interface IDocument{
     pageCount?: number,
     analysis?: IAnalysis,
     originalFileDeleted: boolean,
-    processedAt?: Date
+    processedAt?: Date,
+    expiresAt: Date
 }
 
 const AttentionSchema = new Schema<IAttentionData>({
@@ -137,13 +138,11 @@ const DocumentSchema = new Schema<IDocument> ({
         default: false,
         required: true
     },
-    processedAt: Date
+    processedAt: Date,
+    expiresAt: {
+        type: Date
+    }
 }, { timestamps: true });
-
-DocumentSchema.index(
-    {createdAt: 1},
-    {expireAfterSeconds: 1*60*60*24*7}
-);
 
 const Document = model<IDocument>("Document", DocumentSchema);
 export default Document;

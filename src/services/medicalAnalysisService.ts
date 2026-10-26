@@ -1,17 +1,9 @@
-import { GoogleGenAI } from "@google/genai"
 import type { IAnalysis, IExtractedText } from "../models/document.model.js";
 import z from "zod";
 import createHttpError from "http-errors";
+import ai from "../config/gemini.js";
 
 const medicalAnalyzer = async ( data: IExtractedText[] ): Promise<IAnalysis> => {
-    const gemini_api_key = process.env.GEMINI_API_KEY;
-    if(!gemini_api_key){
-        throw createHttpError(500, "Error in loading environment variables");
-    }
-    const ai = new GoogleGenAI({
-        apiKey: gemini_api_key
-    });
-
     const input = data.map(page => ({
         pageNumber: page.pageNumber,
         text: page.text
