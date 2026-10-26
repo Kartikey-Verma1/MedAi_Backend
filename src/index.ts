@@ -9,6 +9,7 @@ import "dotenv/config";
 import { generalLimiter } from './middlewares/limiter.middleware.js';
 import documentRouter from './routes/documentRoute.js';
 import setupQdrantCollection from './services/qdrantSetupService.js';
+import documentCleanup from './services/documentCleanupService.js';
 
 const app = express();
 app.use(express.json());
@@ -33,6 +34,7 @@ app.use("/", (err: HttpError, req: Request, res: Response, next: NextFunction)=>
 connectDB()
 .then(async ()=>{
     await setupQdrantCollection();
+    documentCleanup();
     console.log("Qdrant collection setup successful");
 })
 .then(()=>{

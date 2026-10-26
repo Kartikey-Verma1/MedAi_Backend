@@ -144,5 +144,9 @@ const DocumentSchema = new Schema<IDocument> ({
     }
 }, { timestamps: true });
 
+DocumentSchema.index(
+    {expiresAt: 1}
+);
+
 const Document = model<IDocument>("Document", DocumentSchema);
 export default Document;

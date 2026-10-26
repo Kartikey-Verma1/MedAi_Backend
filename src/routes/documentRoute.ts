@@ -2,7 +2,6 @@ import express from "express";
 import verifyAccessToken from "../middlewares/verifyAccessToken.middleware.js";
 import upload from "../middlewares/upload.middleware.js";
 import createHttpError from "http-errors";
-import fs from "fs/promises";
 import Document from "../models/document.model.js";
 import { isValidObjectId } from "mongoose";
 import { statusLimiter } from "../middlewares/limiter.middleware.js";
