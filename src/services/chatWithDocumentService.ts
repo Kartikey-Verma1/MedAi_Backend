@@ -33,10 +33,10 @@ const chatWithDocumentService = async (documentId: string, userId: string, quest
         .map((chunk) => chunk.text)
         .filter((text) => typeof text === "string" && text.trim())
         .join("\n\n---\n\n");
-    
+    console.log("qdrant working!");
     const history = chat.messages
         .slice(-10)
-        .map((message) => {`${message.role}: ${message.content}`})
+        .map((message) => `${message.role}: ${message.content}`)
         .join("\n");
 
     
@@ -110,10 +110,10 @@ RESPONSE STYLE:
 `;
 
     const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        model: "gemini-3.5-flash-lite",
         contents: prompt,
     });
-
+    console.log("ai is working!");
     const answer = response.text?.trim();
 
     if (!answer) {

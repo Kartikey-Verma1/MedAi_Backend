@@ -8,6 +8,7 @@ import { statusLimiter } from "../middlewares/limiter.middleware.js";
 import documentProcessor from "../services/documentProcessingService.js";
 import chatWithDocumentService from "../services/chatWithDocumentService.js";
 import Chat from "../models/chat.model.js";
+import qdrantExpire from "../services/qdrantExpireService.js";
 
 const documentRouter = express.Router();
 
@@ -48,7 +49,8 @@ documentRouter.post("/upload",
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -92,7 +94,8 @@ documentRouter.get("/:documentId/status",
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -134,7 +137,8 @@ documentRouter.post("/:documentId/chat", verifyAccessToken, async(req, res)=>{
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -170,11 +174,89 @@ documentRouter.get("/:documentId/chat", verifyAccessToken, async(req, res)=>{
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
 
+});
+
+documentRouter.delete("/:documentId", verifyAccessToken, async(req, res)=>{
+    try{
+        const id = req.params.documentId;
+        if(!id || !isValidObjectId(id)){
+            throw createHttpError(400, "Invalid id");
+        }
+
+        const userId = req.session?.userId;
+        if(!userId){
+            throw createHttpError(401, "Unauthorized");
+        }
+
+        await qdrantExpire(id.toString());
+        await Document.findOneAndDelete({_id: id, userId: userId});
+        await Chat.findOneAndDelete({documentId: id, userId: userId});
+
+        res.json({
+            message: "Document deleted successfully"
+        });
+
+    } catch (err: unknown) {
+        if(createHttpError.isHttpError(err) &&  'statusCode' in err){
+            const error = err;
+            res.status(error.statusCode).json({
+                message: error.message,
+                data: error.data
+            });
+        } else {
+            res.status(500).json({
+                message: "Internal Server Error",
+                "Error": err
+            });
+        }
+    }
+});
+
+documentRouter.get("/", verifyAccessToken, async (req, res) => {
+    try {
+        const userId = req.session?.userId;
+
+        if (!userId) {
+            throw createHttpError(401, "Unauthorized");
+        }
+
+        const documents = await Document.find({ userId })
+            .select(
+                "_id originalName mimeType fileSize status pageCount createdAt processedAt"
+            )
+            .sort({ createdAt: -1 })
+            .lean();
+
+        res.status(200).json({
+            documents: documents.map((document) => ({
+                ...document,
+                hasAnalysis: document.status === "Completed"
+            }))
+        });
+
+    } catch (err: unknown) {
+        if (createHttpError.isHttpError(err) && "statusCode" in err) {
+            const error = err;
+
+            res.status(error.statusCode).json({
+                message: error.message,
+                data: error.data
+            });
+        } else {
+            console.error("Fetching workspace documents failed:", err);
+
+            res.status(500).json({
+                message: "Internal Server Error",
+                "Error": err
+            });
+        }
+    }
 });
 
 export default documentRouter;

@@ -32,7 +32,8 @@ userRouter.get("/my-info",
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -73,7 +74,8 @@ userRouter.patch("/edit-name",
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -123,7 +125,8 @@ userRouter.post("/forget-password", async(req, res) : Promise<void> => {
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -198,7 +201,8 @@ userRouter.post("/reset-verification", async(req, res) : Promise<void> => {
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -287,7 +291,8 @@ userRouter.patch("/reset-password", async(req, res) : Promise<void> => {
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -329,7 +334,8 @@ userRouter.delete("/deleteprofile",
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }

@@ -18,6 +18,17 @@ const setupQdrantCollection = async ()=>{
     if(!created){
         throw createHttpError(500, "Failed to create qdrant collection");
     }
+
+    await qdrant.createPayloadIndex(COLLECTION_NAME, {
+        field_name: "documentId",
+        field_schema: "keyword",
+        wait: true,
+    });
+    await qdrant.createPayloadIndex(COLLECTION_NAME, {
+        field_name: "userId",
+        field_schema: "keyword",
+        wait: true,
+    });
 }
 
 export default setupQdrantCollection;

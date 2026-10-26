@@ -10,8 +10,13 @@ import { generalLimiter } from './middlewares/limiter.middleware.js';
 import documentRouter from './routes/documentRoute.js';
 import setupQdrantCollection from './services/qdrantSetupService.js';
 import documentCleanup from './services/documentCleanupService.js';
+import cors from 'cors';
 
 const app = express();
+app.use(cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true
+}));
 app.use(express.json());
 app.use(cookieParser());
 

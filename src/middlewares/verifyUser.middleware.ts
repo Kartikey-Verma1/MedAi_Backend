@@ -28,7 +28,8 @@ const verifyUser = async (req: Request, res: Response, next: NextFunction) : Pro
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }

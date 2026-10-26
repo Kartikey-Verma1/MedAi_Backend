@@ -83,7 +83,8 @@ authRouter.post("/signup", otpLimiter, async(req, res) : Promise<void> => {
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -171,7 +172,8 @@ authRouter.post("/signup/otpverification", otpLimiter, async(req, res) : Promise
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -269,7 +271,8 @@ authRouter.post("/refresh/login", verifyRefreshToken, async(req, res) : Promise<
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
@@ -375,7 +378,8 @@ authRouter.post("/refresh/token",verifyRefreshToken, async(req, res) : Promise<v
             });
         } else {
             res.status(500).json({
-                message: "Internal Server Error"
+                message: "Internal Server Error",
+                "Error": err
             });
         }
     }
